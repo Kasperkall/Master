@@ -1,0 +1,12 @@
+batch_size: 10
+learning_rate: 0.0003
+input_channels: 3 #RGB
+epochs: 8 #15
+validation_cadence: 3 #How many training sets are gone through per validation set
+loss_weights: [0.3,0.7] #For cross entropy loss weighting
+avg_per_im: 5 #Not used
+
+img_dir: data/train_images #This is an example of 10 images, the image directory for the complete dataset is on harddrive
+gt_dir: data/train_masks
+save_dir: results
+validation_fraction: 0.2
