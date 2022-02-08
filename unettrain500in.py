@@ -33,7 +33,7 @@ epochs = cfg['epochs']
 batch_size = cfg['batch_size']
 validation_frac = cfg['validation_fraction']
 input_channels = cfg['input_channels']
-output_channels = cfg['output_size']
+#output_channels = cfg['output_size']
 validation_cadence = cfg['validation_cadence']
 loss_weights = torch.tensor(cfg['loss_weights'])
 save_dir = cfg['save_dir']
@@ -61,6 +61,7 @@ class TrainingLoop:
 
     def initTrainAndValDl(self):
         train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir, gt_dir, batch_size,validation_frac)
+        print("dict",img_dir)
         return train_dl, val_dl
         
     def getBatchLoss(self, model_pred,gt_batch): 
@@ -91,6 +92,8 @@ class TrainingLoop:
             for batch_i, (x_batch, gt_batch) in enumerate(train_dl):
                 x_batch = x_batch.to(self.device)
                 gt_batch = gt_batch.to(self.device)
+                #print("size",x_batch.shape)
+                #print("siize",gt_batch.shape)
                 self.optimizer.zero_grad() #we have to null out the grad from the previous step so that it dosent accumulate
                 train_pred = self.model(x_batch)
                 train_loss = self.getBatchLoss(train_pred,gt_batch)
@@ -143,10 +146,10 @@ class TrainingLoop:
                     #accuracy = tot_cor / tot_im
                     tracked_val_loss[global_step] = val_loss_avg
 
-                print("Epoch {}/{} with Training Loss: {} and Validation Loss {}".format(epoch_index,epochs,tracked_train_loss[global_step],tracked_val_loss[global_step]))
+                print("Epoch {}/{} with Training Loss: {} and Validation Loss {}".format(epoch_index,epochs,train_loss_tot,val_loss_avg))
 
                 self.getAccuracy(train_dl,val_dl) #Gets the training and validation accuracy
-        self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
+        #self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
                     
 
     def showImages(self,pred,gt_batch):
