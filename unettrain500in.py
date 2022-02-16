@@ -247,6 +247,7 @@ class TrainingLoop:
         fig,ax = plt.subplots()
         global_steps = list(train_dict.keys())
         losst = list(train_dict.values())
+        
         plt.plot(global_steps, losst, label="Train Loss")
 
         global_steps = list(val_dict.keys())

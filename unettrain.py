@@ -9,7 +9,7 @@ import torchgeometry as tgm
 #import torch.nn.functional as F
 import torch.optim as optim
 import os
-import imageio
+#import imageio
 from torch.optim import SGD, Adam, RMSprop
 from torch.utils.data import DataLoader
 import dataloaderv3
@@ -326,11 +326,15 @@ class TrainingLoop:
     def plotLoss(self,train_dict, val_dict):
         fig,ax = plt.subplots()
         global_steps = list(train_dict.keys())
-        losst = list(train_dict.values())
+        losst = list(train_dict.values().astype(float))
+        print(type(global_steps))
+        print(type(losst))
+        print(type(global_steps[0]))
+        print(type(losst[0]))
         plt.plot(global_steps, losst, label="Train Loss")
 
         global_steps = list(val_dict.keys())
-        lossv = list(val_dict.values())
+        lossv = list(float(val_dict.values()))
         plt.plot(global_steps, lossv, label="Val Loss")
 
         plt.legend()

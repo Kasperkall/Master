@@ -26,9 +26,10 @@ class SegmentationDataset(Dataset):
 
         self.img_transform = img_transform
         self.gt_transform = gt_transform
-        """
+        
         self.train_paths.sort()
         self.gt_paths.sort()
+        """
         self.length = min(len(self.train_paths), len(self.gt_paths))
         """
         #print(len(self.img_paths)) #How many images that are in the train_images
