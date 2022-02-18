@@ -1,28 +1,37 @@
+#matplotlib inline
 from matplotlib import pyplot as plt
 import numpy as np
 from numpy.core.numeric import cross
 import torch
 import torch.nn as nn
 from torch.nn.modules import loss
+import torchgeometry as tgm
+#import torch.nn.functional as F
 import torch.optim as optim
+import os
+#import imageio
 from torch.optim import SGD, Adam, RMSprop
 from torch.utils.data import DataLoader
-import torchgeometry as tgm
-from torchgeometry.losses.dice import DiceLoss
-import torchvision.transforms as transforms
-import os
-import collections
-import seaborn as sn
 import dataloaderv3
 import yaml
+from tqdm import tqdm
 from models import simplecnn
 from models import unet
+import torchvision.transforms as transforms
+import collections
+from PIL import Image
 torch.manual_seed(123)
+import torch
+import pandas as pd
+import seaborn as sn
+
+from torchgeometry.losses.dice import DiceLoss
 
 #torch.set_printoptions(edgeitems=2)
 
+
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/config.yaml")
+config_file = open("configs/configshort.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
 img_dir = cfg['img_dir']
@@ -91,7 +100,7 @@ class TrainingLoop:
 
         global_step = 0 #This is the value we use to keep track of the loss in the dictonaries 
         tracked_train_loss = collections.OrderedDict() #Dictonary for training loss
-        tracked_val_loss = collections.OrderedDict() #Dictonary for validation loss
+        tracked_val_loss = collections.OrderedDict() #Dictonary for validation loss 
         
         for epoch_index in range(1, epochs + 1): #Looping through the epochs
             print("Epoch {} of {}, doing {} training / {} validation batches of size {}".format(epoch_index,epochs,len(train_dl),len(val_dl),batch_size,))
@@ -116,8 +125,8 @@ class TrainingLoop:
                 avg_loss += train_loss.cpu().detach().item()
                 train_step += 1
 
-                if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
-                    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
+                #if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
+                    #self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
                     #self.save_images(gt_batch,train_pred,epoch_index,"/media/kasperka/G-DRIVE/Skole")
                 
 
@@ -159,8 +168,8 @@ class TrainingLoop:
                         #tot_cor += (val_pred == gt_batch).sum().item()
                         tot_im += val_pred.shape[0]
 
-                        if epoch_index == epochs:
-                            self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
+                        #if epoch_index == epochs:
+                        #self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
                     
                     val_loss_avg = val_loss_avg / total_steps
                     #accuracy = tot_cor / tot_im
@@ -171,7 +180,7 @@ class TrainingLoop:
                 temp_acc_train, temp_acc_val, valvalues = self.getAccuracy(train_dl,val_dl) #Gets the training and validation accuracy
                 tracked_train_acc.append(temp_acc_train)
                 tracked_val_acc.append(temp_acc_val)
-        self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
+        #self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
         self.plotAccuracy(tracked_train_acc,tracked_val_acc)
         self.plotCM(valvalues)
                     
@@ -233,7 +242,7 @@ class TrainingLoop:
         ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
         fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch_"+format(batch, "02d")+".png"), dpi=600)
         plt.close(fig)
-        
+
         if name == "val":
             image = X_batch[1].detach().cpu()
             image = image - image.min()
@@ -372,41 +381,13 @@ class TrainingLoop:
             if name == "val":
                 valacc = correct/total
                 valvalues = [tp,tot_tp,tn, tot_tn, fp ,fn]
-                recall = tp/(tp + fn) #True positive rate
-                precision = tp/(tp+fp) #Positive predictive value
-                specificity = tn/(tn+fp) #True negative rate
+                recall = tp/(tp + fn)
+                precision = tp/(tp+fp)
                 f1 = 2*(precision * recall)/(precision + recall)
-                dice_score = (2*tp)/((tp+fp)+(tp+fn)) #F1 and dice is the same, remove this
-                print("recall/sensitivity/TPR:",recall,"  precision/PPV:",precision, "  specificity/TNR:",specificity, "  f1:",f1,"  dice:",dice_score)
+                dice_score = (2*tp)/((tp+fp)+(tp+fn)) #F1 and dice is the same
+                print("recall:",recall,"  precision:",precision, "  f1:",f1,"  dice:",dice_score)
                 
         return trainacc,valacc,valvalues
-
-    def plotCM(self,values):#plots the confussion matrix for the last validation
-        values=[values[2],values[4],values[5],values[0]]
-        cf_matrix = np.asarray(values).reshape(2,2)
-        test = np.array([[0,0],[0,0]])
-
-        group_names = ['True Negative','False Positive','False Negative','True Positive']
-
-        group_counts = ["{0:0.0f}".format(value) for value in
-                        cf_matrix.flatten()]
-
-        #group_percentages = ["{0:.2%}".format(value) for value in
-        #                   cf_matrix.flatten()/np.sum(cf_matrix)]
-
-        labels = [f"{v1}\n{v2}" for v1, v2 in #\n{v3}
-                zip(group_names,group_counts)] #,group_percentages
-        labels = np.asarray(labels).reshape(2,2)
-
-        ax = sn.heatmap(test, annot=labels, fmt='', cbar=False, cmap='Blues',linewidths=0.5, linecolor='black')
-
-        ax.set_xlabel('\nPredicted Values')
-        ax.set_ylabel('Actual Values ')
-        ax.xaxis.set_ticklabels(['False','True'])
-        ax.yaxis.set_ticklabels(['False','True'])
-        ax.hlines([3, 6, 9], *ax.get_xlim())
-        plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
-        plt.close()
     
     def plotAccuracy(self,train,val):
         fig,ax = plt.subplots()
@@ -421,6 +402,35 @@ class TrainingLoop:
         #plt.ylim(0.85,1)
         fig.savefig(os.path.join(save_dir, "accuracy.png"), dpi=600)
         plt.close(fig)
+
+    def plotCM(self,values):#plots the confussion matrix for the last validation
+        print(values)
+        values=[values[2],values[4],values[5],values[0]]
+        cf_matrix = np.asarray(values).reshape(2,2)
+        test = np.array([[0,0],[0,0]])
+
+        group_names = ['True Neg','False Pos','False Neg','True Pos']
+
+        group_counts = ["{0:0.0f}".format(value) for value in
+                        cf_matrix.flatten()]
+
+        #group_percentages = ["{0:.2%}".format(value) for value in
+        #                   cf_matrix.flatten()/np.sum(cf_matrix)]
+
+        labels = [f"{v1}\n{v2}" for v1, v2 in #\n{v3}
+                zip(group_names,group_counts)] #,group_percentages
+
+        labels = np.asarray(labels).reshape(2,2)
+
+        ax = sn.heatmap(test, annot=labels, fmt='', cbar=False, cmap='Blues',linewidths=0.5, linecolor='black')
+
+        ax.set_xlabel('\nPredicted Values')
+        ax.set_ylabel('Actual Values ')
+        ax.xaxis.set_ticklabels(['False','True'])
+        ax.yaxis.set_ticklabels(['False','True'])
+        ax.hlines([3, 6, 9], *ax.get_xlim())
+        plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
+        plt.close()
 
     def plotLoss(self,train_dict, val_dict):
         fig,ax = plt.subplots()
@@ -437,9 +447,8 @@ class TrainingLoop:
         plt.legend()
         plt.xlabel("Global Training Step")
         plt.ylabel("Cross Entropy Loss")
-        #plt.ylim(0,0.2)
+        plt.ylim(0,0.2)
         fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
-        plt.close(fig)
 
     def predb_to_mask(self, pred_batch, idx):
         pred = pred_batch[idx]
