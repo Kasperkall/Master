@@ -162,6 +162,7 @@ class TrainingLoop:
                         if epoch_index == epochs:
                             self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
                     
+                        self.mean_dice_coef_over_batch(gt_batch,x_batch)
                     val_loss_avg = val_loss_avg / total_steps
                     #accuracy = tot_cor / tot_im
                     tracked_val_loss[global_step] = val_loss_avg
@@ -171,6 +172,7 @@ class TrainingLoop:
                 temp_acc_train, temp_acc_val, valvalues = self.getAccuracy(train_dl,val_dl) #Gets the training and validation accuracy
                 tracked_train_acc.append(temp_acc_train)
                 tracked_val_acc.append(temp_acc_val)
+                
         self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
         self.plotAccuracy(tracked_train_acc,tracked_val_acc)
         self.plotCM(valvalues)
@@ -187,25 +189,6 @@ class TrainingLoop:
         axarr[1,0].imshow(pred1.detach())
         axarr[1,1].imshow(pred2.detach())
         plt.show()
-    
-    def getStats(self,pred,gt):
-        pred = torch.round(pred)
-        all_pos = int((gt==1).sum())
-        all_neg = int((gt==0).sum())
-
-        correct = (pred == gt).float().sum()
-        acc = float(correct/(all_pos+all_neg))
-        true_pos = int(((pred==1) & (gt==1)).sum())
-        false_pos = int(((pred==1) & (gt==0)).sum())
-        true_neg = int(((pred==0) & (gt==0)).sum())
-        false_neg = int(((pred==0) & (gt==1)).sum())
-
-        dice = (2*true_pos) / (2*true_pos + false_neg + false_pos)
-        #print("acc",acc)
-        print("true_pos {} / {} and false_pos {}".format(true_pos,false_pos,all_pos))
-        print("true_neg {} / {} and false_neg {}".format(true_neg,all_neg,false_neg))
-        #print("DICE", dice) #This is wrong
-        return dice
        
     def saveImages(self, X_batch, Y_batch, outputs, batch,name,step):
         #print("X",X_batch.shape)
@@ -269,7 +252,7 @@ class TrainingLoop:
         bg_pred /= np.max(bg_pred)
         laser_pred = outputs[0][1].detach().cpu().numpy()
         laser_pred /= np.max(laser_pred)
-        segm = predb_to_mask(outputs, 0).cpu().numpy()
+        segm = self.predb_to_mask(outputs, 0).cpu().numpy()
         segm = (segm*255).astype(np.uint8)
 
 
@@ -465,12 +448,9 @@ class TrainingLoop:
             y_segm_pred = self.predb_to_mask(model_outputs, i)
             cumulative_dice += self.dice_coef(ground_truth[i], y_segm_pred)
         avg_dice = cumulative_dice / ground_truth.shape[0]
+        print("Mean avg dice is:",avg_dice)
         return avg_dice
     
     
-        
-
-
-
 if __name__ == '__main__':
     TrainingLoop().main() #instantiates the application object and invokes the main method
