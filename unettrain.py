@@ -19,6 +19,8 @@ from models import simplecnn
 from models import unet
 torch.manual_seed(123)
 
+from PIL import Image
+
 #torch.set_printoptions(edgeitems=2)
 
 #Here we import the yaml file and set some of the variables
@@ -118,19 +120,7 @@ class TrainingLoop:
 
                 if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
                     self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
-                    #self.save_images(gt_batch,train_pred,epoch_index,"/media/kasperka/G-DRIVE/Skole")
                 
-
-                """
-                if batch_i % (avg_per_im//batch_size) == 0 and batch_i != 0: # Track the average loss for every x-th image (set in config.yaml)
-                    avg_loss /= (avg_per_im//batch_size)
-                    tracked_train_loss[global_step] = avg_loss 
-                    
-                    #OBS!OBS!OBS! Since we track the avg-loss for every x-th image, make sure that avg-per-im is set small enough compared to the epoch to get the graph
-                    #For example: If the dataset contains 10 images and we run 5epochs, but have avg_per_im at 51, we wont get a value to plot since we never reach the necessary images to average over!
-                    
-                    avg_loss = 0
-                """    
                 #avg_batch_dice_score = self.mean_dice_coef_over_batch(gt_batch,train_pred)
                 #print("Batch dice score", avg_batch_dice_score)
                 tracked_train_loss[global_step] = train_loss_tot    
@@ -161,8 +151,9 @@ class TrainingLoop:
 
                         if epoch_index == epochs:
                             self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
-                    
-                        self.mean_dice_coef_over_batch(gt_batch,x_batch)
+                            self.mean_dice_coef_over_batch(gt_batch,x_batch)
+                        self.getVisualCompare(x_batch,gt_batch,train_pred,epoch_index,save_dir)
+                        
                     val_loss_avg = val_loss_avg / total_steps
                     #accuracy = tot_cor / tot_im
                     tracked_val_loss[global_step] = val_loss_avg
@@ -214,6 +205,7 @@ class TrainingLoop:
         ax[2].set_axis_off()
         ax[2].set_title("model pred") 
         ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
+        os.makedirs(save_dir, exist_ok=True)
         fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch_"+format(batch, "02d")+".png"), dpi=600)
         plt.close(fig)
         
@@ -242,7 +234,7 @@ class TrainingLoop:
         plt.close(fig)
 
     
-    def save_images(self,X_batch, Y_batch, outputs, epoch, save_dir):
+    def getVisualCompare(self,X_batch, Y_batch, outputs, epoch, save_dir):
 
         input_img = X_batch[0].detach().cpu().permute([1,2,0]).numpy()
         input_img = (input_img*254).astype(np.uint8)
@@ -288,6 +280,7 @@ class TrainingLoop:
         os.makedirs(segm_gt_save_dir, exist_ok=True)
         segm_gt_save_path = os.path.join(segm_gt_save_dir, "epoch"+format(epoch, "02d")+".png")
         segm_gt_comp.save(segm_gt_save_path)
+        plt.close(fig)
 
     def predb_to_mask(self,pred_batch, idx):
         pred = pred_batch[idx]
@@ -448,7 +441,7 @@ class TrainingLoop:
             y_segm_pred = self.predb_to_mask(model_outputs, i)
             cumulative_dice += self.dice_coef(ground_truth[i], y_segm_pred)
         avg_dice = cumulative_dice / ground_truth.shape[0]
-        print("Mean avg dice is:",avg_dice)
+        print("Mean avg dice is:",avg_dice) #Lurer på om dette er dice scoren til BARE laser, så den ser ikke på bakgrunnen som en klasse
         return avg_dice
     
     

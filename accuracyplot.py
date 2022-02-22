@@ -18,7 +18,7 @@ import yaml
 from models import simplecnn
 from models import unet
 torch.manual_seed(123)
-import Image
+from PIL import Image
 
 #torch.set_printoptions(edgeitems=2)
 

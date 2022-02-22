@@ -12,5 +12,5 @@
 
 module purge
 module load Python/3.8.6-GCCcore-10.2.0
-pip3 install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html matplotlib==3.4.2 torchgeometry==0.1.2 albumentations==0.5.2 seaborn==0.11.2
+pip3 install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html matplotlib==3.4.2 torchgeometry==0.1.2 albumentations==0.5.2 seaborn==0.11.2 pillow=8.3.2
 python3 unettrain.py 
