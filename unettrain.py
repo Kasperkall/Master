@@ -36,7 +36,6 @@ input_channels = cfg['input_channels']
 validation_cadence = cfg['validation_cadence']
 loss_weights = torch.tensor(cfg['loss_weights'])
 save_dir = cfg['save_dir']
-avg_per_im = cfg['avg_per_im']
 learning_rate = cfg['learning_rate']
 
 tracked_train_acc = []
