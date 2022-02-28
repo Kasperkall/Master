@@ -1,0 +1,11 @@
+batch_size: 10
+learning_rate: 0.0003
+input_channels: 3 #RGB
+epochs: 10
+validation_cadence: 2 #How many training sets are gone through per validation set
+loss_weights: [0.1,0.9] #For cross entropy loss weighting
+
+img_dir: scanv2/dataset/train-raw #images500x500/combine  #alu_test_im #This is an example of 10 images, the image directory for the complete dataset is on harddrive
+gt_dir: scanv2/dataset/ground-truth #images500x500/gtCombine   #alu_masks 
+save_dir: results0109
+validation_fraction: 0.2
