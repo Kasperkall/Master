@@ -1,8 +1,8 @@
 from PIL import Image
 import os
 
-path = "/Users/kasper/Documents/GitHub/Master/testimages/alu_masks/"
-out_path = "/Users/kasper/Documents/GitHub/Master/testimages/alu_cropped_masks/"
+path = "/Users/eier/GitHub/Master/testimages/alu_masks/"
+out_path = "/Users/eier/GitHub/Master/testimages/alu_cropped_masks/"
 
 for image_path in os.listdir(path):
     #image = "/Users/kasper/Documents/GitHub/Master/001test.png"

@@ -7,7 +7,7 @@
 #SBATCH --constraint="A100"
 #SBATCH -t 2-24:00:00             # Upper time limit for the job
 #SBATCH -p GPUQ
-#SBATCH --mail-user=<kasperka@stud.ntnu.no>
+#SBATCH --mail-user=<eaholm@stud.ntnu.no>
 #SBATCH --mail-type=ALL
 
 module purge

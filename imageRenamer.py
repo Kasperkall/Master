@@ -1,7 +1,7 @@
 from PIL import Image
 import os
 
-path = "/Users/kasper/Documents/GitHub/Master/images500x500/Steel"
+path = "/Users/eier/GitHub/Master/images500x500/Steel"
 
 for image_path in os.listdir(path):
     #image = "/Users/kasper/Documents/GitHub/Master/001test.png"
