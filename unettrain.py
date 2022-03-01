@@ -209,7 +209,7 @@ class TrainingLoop:
         plt.close(fig)
         
         if name == "val":
-            image = X_batch[1].detach().cpu()
+            image = X_batch[0].detach().cpu()
             image = image - image.min()
             image = image/image.max()
             image = image.numpy()
@@ -224,10 +224,10 @@ class TrainingLoop:
             ax[0].imshow(image)
             ax[1].set_axis_off()
             ax[1].set_title("ground truth")
-            ax[1].imshow(Y_batch[1].detach().cpu(), cmap='gray')
+            ax[1].imshow(Y_batch[0].detach().cpu(), cmap='gray')
             ax[2].set_axis_off()
             ax[2].set_title("model pred") 
-            ax[2].imshow(predicted[1].detach().cpu(), cmap='gray') # class 1: laser pred
+            ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
             fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch2_"+format(batch, "02d")+".png"), dpi=600)
 
         plt.close(fig)
