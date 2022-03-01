@@ -11,18 +11,21 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 
+class SegmentationDataset(Dataset):
 
-class ScanDataset(Dataset):
-    def __init__(self, ds_dir, input_img_name, gt_img_name, transforms=ToTensorV2()):
-        super().__init__()
+    def __init__(self, input_dir, gt_dir, ds_length=4000, transforms=ToTensorV2()):
+            super().__init__()
+            if ds_length>4000:
+                assert("Max number of images is 4000")
+            self.transforms = transforms
+            self.imgs_paths = [os.path.join(input_dir, img_file) for img_file in os.listdir(input_dir)]
+            self.segs_paths = [os.path.join(gt_dir, img_file) for img_file in os.listdir(gt_dir)]
+            self.imgs_paths.sort()
+            self.segs_paths.sort()
+            #This is to shorten the dataset if wanted 
+            self.imgs_paths = self.imgs_paths[:ds_length]
+            self.segs_paths = self.segs_paths[:ds_length]
 
-        self.transforms = transforms
-
-        self.imgs_paths = [os.path.join(ds_dir, scan_dir, input_img_name) for scan_dir in os.listdir(ds_dir)]
-        self.segs_paths = [os.path.join(ds_dir, scan_dir, gt_img_name) for scan_dir in os.listdir(ds_dir)]
-
-        self.imgs_paths.sort()
-        self.segs_paths.sort()
 
 
     def __len__(self):
@@ -45,20 +48,29 @@ class ScanDataset(Dataset):
         img = img.float()
         return img,seg
 
-def get_dataloader(batch_size, ds_dir, input_img_name, gt_img_name, transforms=ToTensorV2(), shuffle=False):
-    ds = ScanDataset(ds_dir, input_img_name, gt_img_name, transforms)
-    loader = DataLoader(ds, batch_size, shuffle)
-    return loader
-    
+    def get_dataloaders(input_dir, gt_dir, batch_size, val_frac, ds_length=4000, transforms=ToTensorV2(), shuffle=False):
+
+        dataset = SegmentationDataset(input_dir, gt_dir, ds_length, transforms) #Here we get the entire dataset
+        num_val_images = int(val_frac*len(dataset)) #Get the amount images that are going into the validation set based on the validation fraction
+        num_train_images = len(dataset) - num_val_images  #Get the amount of the other part that goes to the training set
+
+        train_set, val_set = torch.utils.data.random_split(dataset, [num_train_images, num_val_images]) #Randomly choosing which pair of images and ground truth that goes to the training set and the validation set
+        train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True) #Creating a dataloader for the training set
+        val_loader = DataLoader(dataset=val_set, batch_size=batch_size, shuffle=True) #Creating dataloader for the validation set
+        return train_loader, val_loader 
 
 
 
+    if __name__ == '__main__':
+        loader = get_dataloaders(2, "scan-dataset", "img_l.png", "gt_scan.png")
 
-if __name__ == '__main__':
-    loader = get_dataloader(2, "scan-dataset", "img_l.png", "gt_scan.png")
+        for x,y in loader:
+            print(x.shape)
+            print(y.shape)
+            print(type(x[0][0][0]))
 
-    for x,y in loader:
-        print(x.shape)
-        print(y.shape)
-        print(type(x[0][0][0]))
-        break
+            fig,ax = plt.subplots(1,1)
+            ax.set_axis_off()
+            ax.set_title("input image")
+            ax.imshow(x[0].detach().cpu().permute([1,2,0]))
+            break

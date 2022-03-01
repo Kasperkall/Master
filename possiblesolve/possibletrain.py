@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib as mp
 import matplotlib.pyplot as plt
+import possibleDataloader 
 from possibleUnet import Unet2D
 
 import torch
@@ -15,6 +16,7 @@ import os
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from tqdm import tqdm
+import yaml
 
 from PIL import Image
 
@@ -23,6 +25,24 @@ from torchgeometry.losses.dice import DiceLoss
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("Training on ", device)
+
+#Here we import the yaml file and set some of the variables
+config_file = open("configs/configtest.yaml")
+cfg = yaml.load(config_file, Loader=yaml.FullLoader)
+
+img_dir = cfg['img_dir']
+gt_dir = cfg['gt_dir']
+epochs = cfg['epochs']
+batch_size = cfg['batch_size']
+validation_frac = cfg['validation_fraction']
+input_channels = cfg['input_channels']
+validation_cadence = cfg['validation_cadence']
+loss_weights = torch.tensor(cfg['loss_weights'])
+save_dir = cfg['save_dir']
+learning_rate = cfg['learning_rate']
+
+tracked_train_acc = []
+tracked_val_acc = []
 
 def predb_to_mask(pred_batch, idx):
     pred = pred_batch[idx]
@@ -99,13 +119,6 @@ def save_images(X_batch, Y_batch, outputs, epoch, save_dir):
     segm_gt_comp.save(segm_gt_save_path)
 
 
-
-
-
-
-
-
-
 def train_step(X_batch, Y_batch, optimizer, model, loss_fn):
     optimizer.zero_grad()
     outputs = model(X_batch)
@@ -135,10 +148,10 @@ def train(model, num_classes, train_dl, loss_fn, optimizer, epochs):
 def main():
     
     #HYPERPARAMETERS
-    LEARNING_RATE = 3e-4
+    LEARNING_RATE = learning_rate
     CR_ENTR_WEIGHTS = torch.tensor([0.1,0.9]).to(device)
-    BATCH_SIZE = 2
-    INPUT_CHANNELS = 3
+    BATCH_SIZE = batch_size
+    INPUT_CHANNELS = input_channels
     NUM_CLASSES = 2
 
     
@@ -155,7 +168,7 @@ def main():
     ])
 
 
-    train_loader = get_dataloader(BATCH_SIZE, "scan-dataset", "img_l.png", "gt_scan.png", transforms=tf, shuffle=True)
+    train_loader,val_loader = possibleDataloader.get_dataloaders(BATCH_SIZE, "scan-dataset", "img_l.png", "gt_scan.png", transforms=tf, shuffle=True)
 
     unet = Unet2D(INPUT_CHANNELS,NUM_CLASSES)
     unet.to(device)
