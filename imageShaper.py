@@ -5,7 +5,7 @@ path = "/Users/eier/GitHub/Master/testimages/alu_masks/"
 out_path = "/Users/eier/GitHub/Master/testimages/alu_cropped_masks/"
 
 for image_path in os.listdir(path):
-    #image = "/Users/kasper/Documents/GitHub/Master/001test.png"
+    #image = "/Users/eier/GitHub/Master/001test.png"
     input_path = os.path.join(path, image_path)
 
     im = Image.open(input_path)
