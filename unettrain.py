@@ -24,7 +24,7 @@ from PIL import Image
 #torch.set_printoptions(edgeitems=2)
 
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/configtest.yaml")
+config_file = open("configs/config.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
 img_dir = cfg['img_dir']
