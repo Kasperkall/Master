@@ -55,7 +55,7 @@ class Unet2D(nn.Module):
 
 
         up3_in = self.conv_transp43(up4_out)
-        cat3 = torch.cat([up3_in,out3], 1)
+        cat3 = torch.cat([up3_in,out3], 1) # [76,75] need to be equal
         up3_out = self.upconv3(cat3)
 
         up2_in = self.conv_transp32(up3_out)
