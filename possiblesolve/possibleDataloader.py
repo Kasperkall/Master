@@ -62,7 +62,7 @@ class SegmentationDataset(Dataset):
 
 
     if __name__ == '__main__':
-        loader = get_dataloaders(2, "scan-dataset", "img_l.png", "gt_scan.png")
+        loader,val_loader = get_dataloaders("data/train_images", "data/train_masks",8, val_frac = 0.2)
 
         for x,y in loader:
             print(x.shape)
