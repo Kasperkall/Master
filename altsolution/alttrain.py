@@ -103,6 +103,13 @@ def save_images(X_batch, Y_batch, outputs, epoch, save_dir):
 def train_step(X_batch, Y_batch, optimizer, model, loss_fn):
     optimizer.zero_grad()
     outputs = model(X_batch)
+
+    print("\n outputs.shape:", outputs.shape) #[1, 2, 304, 304]
+    print("\n Y_batch.shape:", Y_batch.shape) #[1, 300, 300]
+    # Padding
+    Y_batch = F.pad(input=Y_batch, pad=(2, 2, 2, 2), mode='constant', value=0)
+    print("\n Y_batch.shape:", Y_batch.shape) #[1, 300, 300]
+
     loss = loss_fn(outputs, Y_batch)
     #print(loss.item())
     loss.backward()
@@ -165,9 +172,6 @@ def main():
 
     unet = Unet2D(input_channels,NUM_CLASSES)
     unet.to(device)
-
-
-
 
     opt = torch.optim.Adam(unet.parameters(), lr=learning_rate)
     #loss_fn = torch.nn.CrossEntropyLoss(weight=CR_ENTR_WEIGHTS)
