@@ -108,7 +108,7 @@ def train_step(X_batch, Y_batch, optimizer, model, loss_fn):
     print("\n Y_batch.shape:", Y_batch.shape) #[1, 300, 300]
     # Padding
     Y_batch = F.pad(input=Y_batch, pad=(2, 2, 2, 2), mode='constant', value=0)
-    print("\n Y_batch.shape:", Y_batch.shape) #[1, 300, 300]
+    print("\n padded Y_batch.shape:", Y_batch.shape) #[1, 300, 300]
 
     loss = loss_fn(outputs, Y_batch)
     #print(loss.item())

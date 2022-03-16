@@ -57,33 +57,33 @@ class Unet2D(nn.Module):
 
         up3_in = self.conv_transp43(up4_out)
         
-        print("\n up3_in.shape:", up3_in.shape) # [1, 128, 76, 76]
-        print("\n out3.shape:", out3.shape) # [1, 128, 75, 75]
+        #print("\n up3_in.shape:", up3_in.shape) # [1, 128, 76, 76]
+        #print("\n out3.shape:", out3.shape) # [1, 128, 75, 75]
         # Padding
         out3 = F.pad(input=out3, pad=(1, 0, 1, 0), mode='constant', value=0)
-        print("\n padded out3.shape:", out3.shape) # [1, 128, 76, 76] 
+        #print("\n padded out3.shape:", out3.shape) # [1, 128, 76, 76] 
 
         cat3 = torch.cat([up3_in,out3], 1) # [76,75] need to be equal
         up3_out = self.upconv3(cat3)
 
         up2_in = self.conv_transp32(up3_out)
 
-        print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
-        print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
+        #print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
+        #print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
         # Padding 
         out2 = F.pad(input=out2, pad=(1, 1, 1, 1), mode='constant', value=0)
-        print("\n padded out3.shape:", out2.shape) # [1, 128, 76, 76] 
+        #print("\n padded out3.shape:", out2.shape) # [1, 128, 76, 76] 
 
         cat2 = torch.cat([up2_in, out2], 1)
         up2_out = self.upconv2(cat2)
 
         up1_in = self.conv_transp21(up2_out)
 
-        print("\n up1_in.shape:", up1_in.shape) # [1, 32, 304, 304]
-        print("\n out1.shape:", out1.shape) # [1, 32, 300, 300]
+        #print("\n up1_in.shape:", up1_in.shape) # [1, 32, 304, 304]
+        #print("\n out1.shape:", out1.shape) # [1, 32, 300, 300]
         # Padding 
         out1 = F.pad(input=out1, pad=(2, 2, 2, 2), mode='constant', value=0)
-        print("\n padded out3.shape:", out1.shape) # [1, 128, 76, 76] 
+        #print("\n padded out3.shape:", out1.shape) # [1, 128, 76, 76] 
 
         cat1 = torch.cat([up1_in, out1], 1)
         out = self.upconv1(cat1)
