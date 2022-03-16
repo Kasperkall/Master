@@ -63,13 +63,13 @@ class Unet2D(nn.Module):
         #out3 = F.pad(input=out3, pad=(1, 0, 1, 0), mode='constant', value=0)
         #print("\n padded out3.shape:", out3.shape) # [1, 128, 76, 76] 
 
-        cat3 = torch.cat([up3_in,out3], 1) # [76,75] need to be equal
+        cat3 = torch.cat([up3_in,out3], 1) # need to be equal
         up3_out = self.upconv3(cat3)
 
         up2_in = self.conv_transp32(up3_out)
 
-        #print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
-        #print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
+        print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
+        print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
         # Padding 
         #out2 = F.pad(input=out2, pad=(1, 1, 1, 1), mode='constant', value=0)
         #print("\n padded out3.shape:", out2.shape) # [1, 128, 76, 76] 
