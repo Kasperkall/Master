@@ -68,8 +68,8 @@ class Unet2D(nn.Module):
 
         up2_in = self.conv_transp32(up3_out)
 
-        print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
-        print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
+        #print("\n up2_in.shape:", up2_in.shape) # [1, 64, 152, 152]
+        #print("\n out2.shape:", out2.shape) # [1, 64, 150, 150]
         # Padding 
         #out2 = F.pad(input=out2, pad=(1, 1, 1, 1), mode='constant', value=0)
         #print("\n padded out3.shape:", out2.shape) # [1, 128, 76, 76] 
