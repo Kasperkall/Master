@@ -20,35 +20,45 @@ from models import unet
 torch.manual_seed(123)
 
 from PIL import Image
-#117 118 150 152 164 165
+
 
 #torch.set_printoptions(edgeitems=2)
 
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/configshort.yaml")
+config_file = open("configs/configAll.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
-img_dir = cfg['img_dir']
-gt_dir = cfg['gt_dir']
-epochs = cfg['epochs']
-batch_size = cfg['batch_size']
-validation_frac = cfg['validation_fraction']
-input_channels = cfg['input_channels']
+img_dir_first = cfg['img_dir_first']
+gt_dir_first = cfg['gt_dir_first']
+img_dir_transfer = cfg['img_dir_transfer']
+gt_dir_transfer = cfg['gt_dir_transfer']
+
+epochs_first = cfg['epochs']
+epochs_transfer = cfg['epochs_transfer']
+batch_size_first = cfg['batch_size']
+batch_size_transfer = cfg['batch_size_transfer']
+
 validation_cadence = cfg['validation_cadence']
+validation_frac = cfg['validation_fraction']
 loss_weights = torch.tensor(cfg['loss_weights'])
 save_dir = cfg['save_dir']
-learning_rate = cfg['learning_rate']
+learning_rate_first = cfg['learning_rate']
+learning_rate_transfer = cfg['learning_rate_transfer']
 
+save_name =""
 tracked_train_acc = []
 tracked_val_acc = []
+tracked_train_loss = collections.OrderedDict() #Dictonary for training loss
+tracked_val_loss = collections.OrderedDict() #Dictonary for validation loss
+global_step = 0 #This is the value we use to keep track of the loss in the dictonaries
 
 class TrainingLoop:
     def __init__(self, sys_argv=None):
         self.use_cuda = torch.cuda.is_available() #Checks if we can run on GPU
         self.device = torch.device("cuda" if self.use_cuda else "cpu") #If we can we do, if not we run on cpu
 
-        self.model = self.initModel() #Initializing the model 
-        self.optimizer = self.initOptimizer() #Initializing the optimizer
+        self.model = self.initModel() #Initializing the model
+
     
     def initModel(self):
         model = unet.UNET() #må kalle på denne fra model.py
@@ -66,11 +76,23 @@ class TrainingLoop:
 
         return model
 
-    def initOptimizer(self): #må fikse hvilken modell den viser til, for har ikke segmentation_model har cnn model ellerno
-        return Adam(self.model.parameters(),lr=learning_rate) #Adam maintains a separate learning rate for each parameter and automatically updates that learning rate as training progresses
+    def initOptimizer(self,mode): #må fikse hvilken modell den viser til, for har ikke segmentation_model har cnn model ellerno
+        if mode == "train":
+            learning = learning_rate_first
+        elif mode == "transfer":
+            learning = learning_rate_transfer
+        return Adam(self.model.parameters(),lr=learning) #Adam maintains a separate learning rate for each parameter and automatically updates that learning rate as training progresses
 
-    def initTrainAndValDl(self):
-        train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir, gt_dir, batch_size,validation_frac)
+    def initTrainAndValDl(self,mode):
+        if mode=="train":
+            images = img_dir_first
+            gts = gt_dir_first
+            batch_size = batch_size_first
+        elif mode == "transfer":
+            images = img_dir_transfer
+            gts = gt_dir_transfer
+            batch_size =batch_size_transfer
+        train_dl,val_dl = dataloaderv3.get_dataloaders(images, gts, batch_size, validation_frac)
         return train_dl, val_dl
         
     def getBatchLoss(self, model_pred,gt_batch): 
@@ -81,16 +103,22 @@ class TrainingLoop:
         output = lossfn(model_pred, gt_batch)
         
         #output = tgm.losses.dice.dice_loss(model_pred,gt_batch)
-        #print("aaa", torch.max(model_pred))
         return output
 
-    def main(self):
-        train_dl,val_dl = self.initTrainAndValDl() # Getting the dataloaders for training and validation
+    def main(self,mode):
+        global global_step
+        global save_name
+        #global_step = global_step_all
+        self.optimizer = self.initOptimizer(mode) #Initializing the optimizer
+        train_dl,val_dl = self.initTrainAndValDl(mode) # Getting the dataloaders for training and validation
+        if mode == "train":
+            epochs = epochs_first
+            batch_size = batch_size_first
+        if mode == "transfer":
+            self.model.load_state_dict(torch.load(save_name))
+            epochs = epochs_transfer
+            batch_size = batch_size_transfer
         print("Starting {}, and running the model: {} with {} training / {} validation batches of size {}*{}".format(type(self).__name__, type(self.model),len(train_dl),len(val_dl),batch_size,(torch.cuda.device_count() if self.use_cuda else 1)))
-
-        global_step = 0 #This is the value we use to keep track of the loss in the dictonaries 
-        tracked_train_loss = collections.OrderedDict() #Dictonary for training loss
-        tracked_val_loss = collections.OrderedDict() #Dictonary for validation loss
         
         for epoch_index in range(1, epochs + 1): #Looping through the epochs
             print("Epoch {} of {}, doing {} training / {} validation batches of size {}".format(epoch_index,epochs,len(train_dl),len(val_dl),batch_size,))
@@ -115,8 +143,8 @@ class TrainingLoop:
                 avg_loss += train_loss.cpu().detach().item()
                 train_step += 1
 
-                #if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
-                #    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
+                if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
+                    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"traindb",global_step,mode)
                 
                 #avg_batch_dice_score = self.mean_dice_coef_over_batch(gt_batch,train_pred)
                 #print("Batch dice score", avg_batch_dice_score)
@@ -147,9 +175,9 @@ class TrainingLoop:
                         tot_im += val_pred.shape[0]
 
                         if epoch_index == epochs:
-                        #    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
-                            self.mean_dice_coef_over_batch(gt_batch,x_batch)
-                        #self.getVisualCompare(x_batch,gt_batch,train_pred,epoch_index,save_dir)
+                            self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step,mode) #prints two of the predictions and their gt from the last validation
+                            #self.mean_dice_coef_over_batch(gt_batch,x_batch)
+                        self.getVisualCompare(x_batch,gt_batch,train_pred,epoch_index,save_dir,mode)
                         
                     val_loss_avg = val_loss_avg / total_steps
                     #accuracy = tot_cor / tot_im
@@ -161,9 +189,12 @@ class TrainingLoop:
                 tracked_train_acc.append(temp_acc_train)
                 tracked_val_acc.append(temp_acc_val)
                 
-        #self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
-        #self.plotAccuracy(tracked_train_acc,tracked_val_acc)
-        self.plotCM(valvalues)
+        self.plotLoss(tracked_train_loss,tracked_val_loss,mode) #Plots the loss for the entire training loop
+        self.plotAccuracy(tracked_train_acc,tracked_val_acc,mode)
+        self.plotCM(valvalues,mode)
+        if mode == "train":
+            save_name = "configs/model_E" + str(epochs) +"_Opt" + str((type (self.optimizer).__name__)) + "_B" + str(batch_size) + "_lr" + str(learning_rate_first)[-3:] + "_test2.pt" 
+            torch.save(self.model.state_dict(),save_name)
                     
 
     def showImages(self,pred,gt_batch):
@@ -178,7 +209,7 @@ class TrainingLoop:
         axarr[1,1].imshow(pred2.detach())
         plt.show()
        
-    def saveImages(self, X_batch, Y_batch, outputs, batch,name,step):
+    def saveImages(self, X_batch, Y_batch, outputs, batch,name,step,mode):
         #print("X",X_batch.shape)
         #print("Y",Y_batch.shape)
         #print("out",outputs.shape)
@@ -203,9 +234,9 @@ class TrainingLoop:
         ax[2].set_title("model pred") 
         ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
         os.makedirs(save_dir, exist_ok=True)
-        fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch_"+format(batch, "02d")+".png"), dpi=600)
+        fig.savefig(os.path.join(save_dir, name+str(step)+mode+format(batch, "02d")+".png"), dpi=600)
         plt.close(fig)
-        
+        """
         if name == "val":
             image = X_batch[1].detach().cpu()
             image = image - image.min()
@@ -229,9 +260,10 @@ class TrainingLoop:
             fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch2_"+format(batch, "02d")+".png"), dpi=600)
 
         plt.close(fig)
+        """
 
     
-    def getVisualCompare(self,X_batch, Y_batch, outputs, epoch, save_dir):
+    def getVisualCompare(self,X_batch, Y_batch, outputs, epoch, save_dir,mode):
 
         input_img = X_batch[0].detach().cpu().permute([1,2,0]).numpy()
         input_img = (input_img*254).astype(np.uint8)
@@ -245,7 +277,6 @@ class TrainingLoop:
         segm = (segm*255).astype(np.uint8)
 
 
-        #MATPLOTLIB PLOTS
         fig,ax = plt.subplots(1,5)
         ax[0].set_axis_off()
         ax[0].set_title("input image")
@@ -262,9 +293,8 @@ class TrainingLoop:
         ax[4].set_axis_off()
         ax[4].set_title("segm pred")
         ax[4].imshow(segm) # segmentation prediction
-        fig.savefig(os.path.join(save_dir, "epoch_"+format(epoch, "02d")+".png"), dpi=600)
+        fig.savefig(os.path.join(save_dir, mode + "epoch_"+format(epoch, "02d")+".png"), dpi=600)
         
-        #FULL IMAGES
         pred_seg = Image.fromarray(segm)
         segm_save_dir = os.path.join(save_dir, "segmentations_preds", )
         os.makedirs(segm_save_dir, exist_ok=True)
@@ -354,7 +384,7 @@ class TrainingLoop:
                 
         return trainacc,valacc,valvalues
 
-    def plotCM(self,values):#plots the confussion matrix for the last validation
+    def plotCM(self,values,mode):#plots the confussion matrix for the last validation
         values=[values[2],values[4],values[5],values[0]]
         cf_matrix = np.asarray(values).reshape(2,2)
         test = np.array([[0,0],[0,0]])
@@ -378,10 +408,10 @@ class TrainingLoop:
         ax.xaxis.set_ticklabels(['False','True'])
         ax.yaxis.set_ticklabels(['False','True'])
         ax.hlines([3, 6, 9], *ax.get_xlim())
-        plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
+        plt.savefig(os.path.join(save_dir, "CFmatrix" + mode + ".png"), dpi=600)
         plt.close()
     
-    def plotAccuracy(self,train,val):
+    def plotAccuracy(self,train,val,mode):
         fig,ax = plt.subplots()
         plt.plot(train, label="Train accuracy")
         plt.xticks(np.arange(len(train)), np.arange(1, len(train)+1))
@@ -392,10 +422,10 @@ class TrainingLoop:
         plt.xlabel("Epochs")
         plt.ylabel("Pixel accuracy")
         #plt.ylim(0.85,1)
-        fig.savefig(os.path.join(save_dir, "accuracy.png"), dpi=600)
+        fig.savefig(os.path.join(save_dir, "accuracy"+mode+".png"), dpi=600)
         plt.close(fig)
 
-    def plotLoss(self,train_dict, val_dict):
+    def plotLoss(self,train_dict, val_dict,mode):
         fig,ax = plt.subplots()
         global_steps = list(train_dict.keys())
         losst = list(train_dict.values())
@@ -411,7 +441,7 @@ class TrainingLoop:
         plt.xlabel("Global Training Step")
         plt.ylabel("Cross Entropy Loss")
         #plt.ylim(0,0.2)
-        fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
+        fig.savefig(os.path.join(save_dir, "loss" + mode + ".png"), dpi=600)
         plt.close(fig)
 
     def predb_to_mask(self, pred_batch, idx):
@@ -443,4 +473,5 @@ class TrainingLoop:
     
     
 if __name__ == '__main__':
-    TrainingLoop().main() #instantiates the application object and invokes the main method
+    TrainingLoop().main("train") #instantiates the application object and invokes the main method
+    TrainingLoop().main("transfer") #instantiates the application object and invokes the main method with a chosen pretrained model
