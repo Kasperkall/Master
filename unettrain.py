@@ -115,8 +115,8 @@ class TrainingLoop:
                 avg_loss += train_loss.cpu().detach().item()
                 train_step += 1
 
-                #if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
-                #    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
+                if epoch_index == epochs and batch_i<= 2: #Makes a image that shows the input,pred and gt at the last epoch
+                    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"train",global_step)
                 
                 #avg_batch_dice_score = self.mean_dice_coef_over_batch(gt_batch,train_pred)
                 #print("Batch dice score", avg_batch_dice_score)
@@ -147,9 +147,9 @@ class TrainingLoop:
                         tot_im += val_pred.shape[0]
 
                         if epoch_index == epochs:
-                        #    self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
+                            #self.saveImages(x_batch,gt_batch,train_pred,batch_i,"val",global_step) #prints two of the predictions and their gt from the last validation
                             self.mean_dice_coef_over_batch(gt_batch,x_batch)
-                        #self.getVisualCompare(x_batch,gt_batch,train_pred,epoch_index,save_dir)
+                        self.getVisualCompare(x_batch,gt_batch,train_pred,epoch_index,save_dir)
                         
                     val_loss_avg = val_loss_avg / total_steps
                     #accuracy = tot_cor / tot_im
@@ -161,8 +161,8 @@ class TrainingLoop:
                 tracked_train_acc.append(temp_acc_train)
                 tracked_val_acc.append(temp_acc_val)
                 
-        #self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
-        #self.plotAccuracy(tracked_train_acc,tracked_val_acc)
+        self.plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
+        self.plotAccuracy(tracked_train_acc,tracked_val_acc)
         self.plotCM(valvalues)
                     
 
@@ -194,7 +194,7 @@ class TrainingLoop:
         fig,ax = plt.subplots(1,3)
         ax[0].set_axis_off()
         ax[0].set_title("input image")
-        #ax[0].imshow(X_batch[0].detach().cpu().permute([1,2,0]))
+        ax[0].imshow(X_batch[0].detach().cpu().permute([1,2,0]))
         ax[0].imshow(image)
         ax[1].set_axis_off()
         ax[1].set_title("ground truth")
@@ -203,11 +203,11 @@ class TrainingLoop:
         ax[2].set_title("model pred") 
         ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
         os.makedirs(save_dir, exist_ok=True)
-        fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch_"+format(batch, "02d")+".png"), dpi=600)
+        #fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch_"+format(batch, "02d")+".png"), dpi=600)
         plt.close(fig)
         
         if name == "val":
-            image = X_batch[1].detach().cpu()
+            image = X_batch[0].detach().cpu()
             image = image - image.min()
             image = image/image.max()
             image = image.numpy()
@@ -218,15 +218,15 @@ class TrainingLoop:
             fig,ax = plt.subplots(1,3)
             ax[0].set_axis_off()
             ax[0].set_title("input image")
-            #ax[0].imshow(X_batch[0].detach().cpu().permute([1,2,0]))
+            ax[0].imshow(X_batch[0].detach().cpu().permute([1,2,0]))
             ax[0].imshow(image)
             ax[1].set_axis_off()
             ax[1].set_title("ground truth")
-            ax[1].imshow(Y_batch[1].detach().cpu(), cmap='gray')
+            ax[1].imshow(Y_batch[0].detach().cpu(), cmap='gray')
             ax[2].set_axis_off()
             ax[2].set_title("model pred") 
-            ax[2].imshow(predicted[1].detach().cpu(), cmap='gray') # class 1: laser pred
-            fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch2_"+format(batch, "02d")+".png"), dpi=600)
+            ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
+            #fig.savefig(os.path.join(save_dir, name+str(step)+"_unetbatch2_"+format(batch, "02d")+".png"), dpi=600)
 
         plt.close(fig)
 
@@ -244,27 +244,25 @@ class TrainingLoop:
         segm = self.predb_to_mask(outputs, 0).cpu().numpy()
         segm = (segm*255).astype(np.uint8)
 
+        fig,ax = plt.subplots(1,3)
+        ax[1].set_title("ground truth")
+        ax[1].imshow(Y_batch[0].detach().cpu(), cmap='gray')
 
         #MATPLOTLIB PLOTS
-        fig,ax = plt.subplots(1,5)
+        fig,ax = plt.subplots(1,3)
         ax[0].set_axis_off()
         ax[0].set_title("input image")
-        ax[0].imshow(input_img)
+        ax[0].imshow(input_img, cmap='cubehelix')
         ax[1].set_axis_off()
         ax[1].set_title("ground truth")
-        ax[1].imshow(gt_img)
+        ax[1].imshow(gt_img, cmap='gist_earth')
         ax[2].set_axis_off()
-        ax[2].set_title("BG pred")
-        ax[2].imshow(bg_pred) # class 0: background pred
-        ax[3].set_axis_off()
-        ax[3].set_title("laser pred")
-        ax[3].imshow(laser_pred) # class 1: laser pred
-        ax[4].set_axis_off()
-        ax[4].set_title("segm pred")
-        ax[4].imshow(segm) # segmentation prediction
+        ax[2].set_title("segm pred")
+        ax[2].imshow(segm, cmap='hot') # segmentation prediction
         fig.savefig(os.path.join(save_dir, "epoch_"+format(epoch, "02d")+".png"), dpi=600)
         
         #FULL IMAGES
+        """
         pred_seg = Image.fromarray(segm)
         segm_save_dir = os.path.join(save_dir, "segmentations_preds", )
         os.makedirs(segm_save_dir, exist_ok=True)
@@ -278,6 +276,7 @@ class TrainingLoop:
         segm_gt_save_path = os.path.join(segm_gt_save_dir, "epoch"+format(epoch, "02d")+".png")
         segm_gt_comp.save(segm_gt_save_path)
         plt.close(fig)
+        """
 
     def predb_to_mask(self,pred_batch, idx):
         pred = pred_batch[idx]
@@ -378,7 +377,7 @@ class TrainingLoop:
         ax.xaxis.set_ticklabels(['False','True'])
         ax.yaxis.set_ticklabels(['False','True'])
         ax.hlines([3, 6, 9], *ax.get_xlim())
-        plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
+        #plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
         plt.close()
     
     def plotAccuracy(self,train,val):
@@ -392,7 +391,7 @@ class TrainingLoop:
         plt.xlabel("Epochs")
         plt.ylabel("Pixel accuracy")
         #plt.ylim(0.85,1)
-        fig.savefig(os.path.join(save_dir, "accuracy.png"), dpi=600)
+        #fig.savefig(os.path.join(save_dir, "accuracy.png"), dpi=600)
         plt.close(fig)
 
     def plotLoss(self,train_dict, val_dict):
@@ -411,7 +410,7 @@ class TrainingLoop:
         plt.xlabel("Global Training Step")
         plt.ylabel("Cross Entropy Loss")
         #plt.ylim(0,0.2)
-        fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
+        #fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
         plt.close(fig)
 
     def predb_to_mask(self, pred_batch, idx):
