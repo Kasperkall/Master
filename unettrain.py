@@ -234,7 +234,13 @@ class TrainingLoop:
     def getVisualCompare(self,X_batch, Y_batch, outputs, epoch, save_dir):
 
         input_img = X_batch[0].detach().cpu().permute([1,2,0]).numpy()
-        input_img = (input_img*254).astype(np.uint8)
+        #input_img = (input_img*254).astype(np.uint8)
+        input_img = input_img - input_img.min()
+        input_img = input_img/input_img.max()
+        print(np.size(input_img))
+        #input_img = np.un
+        input_img = input_img.numpy()
+        input_img = np.moveaxis(input_img,0,2)
         gt_img = Y_batch[0].detach().cpu().numpy()
         gt_img = (gt_img*254).astype(np.uint8)
         bg_pred = outputs[0][0].detach().cpu().numpy()
@@ -252,12 +258,12 @@ class TrainingLoop:
         fig,ax = plt.subplots(1,3)
         ax[0].set_axis_off()
         ax[0].set_title("input image")
-        ax[0].imshow(input_img, cmap='cubehelix')
+        ax[0].imshow(input_img, cmap='gist_yarg')
         ax[1].set_axis_off()
         ax[1].set_title("ground truth")
         ax[1].imshow(gt_img, cmap='gist_earth')
         ax[2].set_axis_off()
-        ax[2].set_title("segm pred")
+        ax[2].set_title("gray")
         ax[2].imshow(segm, cmap='hot') # segmentation prediction
         fig.savefig(os.path.join(save_dir, "epoch_"+format(epoch, "02d")+".png"), dpi=600)
         
