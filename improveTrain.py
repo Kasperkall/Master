@@ -143,11 +143,17 @@ def getAccuracy(model,train_dl, val_dl):
                 valacc = correct/total
                 valvalues = [tp,tot_tp,tn, tot_tn, fp ,fn]
                 recall = tp/(tp + fn) #True positive rate
-                precision = tp/(tp+fp) #Positive predictive value
+                if (tp+fp)==0:
+                    precision = 0
+                else:
+                    precision = tp/(tp+fp) #Positive predictive value
                 specificity = tn/(tn+fp) #True negative rate
-                f1 = 2*(precision * recall)/(precision + recall)
+                if precision == 0:
+                    f1 = 0
+                else:
+                    f1 = 2*(precision * recall)/(precision + recall)
                 dice_score = (2*tp)/((tp+fp)+(tp+fn)) #F1 and dice is the same, remove this
-                print("recall/sensitivity/TPR:",recall,"  precision/PPV:",precision, "  specificity/TNR:",specificity, "  f1:",f1,"  dice:",dice_score)
+                print("dice:",dice_score, "   recall/sensitivity/TPR:",recall,"  precision/PPV:",precision, "  specificity/TNR:",specificity, "  f1:",f1)
                 
         return trainacc,valacc, dice_score, valvalues
 
@@ -176,9 +182,34 @@ def plotAccuracy(train,val,dice):
     fig.savefig(os.path.join(save_dir, "dicescore.png"), dpi=600)
     plt.close(fig)
 
+def plotCM(values):#plots the confussion matrix for the last validation
+        values=[values[2],values[4],values[5],values[0]]
+        cf_matrix = np.asarray(values).reshape(2,2)
+        test = np.array([[0,0],[0,0]])
 
+        group_names = ['True Negative','False Positive','False Negative','True Positive']
 
-def save_images(X_batch, Y_batch, outputs, epoch, save_dir):
+        group_counts = ["{0:0.0f}".format(value) for value in
+                        cf_matrix.flatten()]
+
+        #group_percentages = ["{0:.2%}".format(value) for value in
+        #                   cf_matrix.flatten()/np.sum(cf_matrix)]
+
+        labels = [f"{v1}\n{v2}" for v1, v2 in #\n{v3}
+                zip(group_names,group_counts)] #,group_percentages
+        labels = np.asarray(labels).reshape(2,2)
+
+        ax = sn.heatmap(test, annot=labels, fmt='', cbar=False, cmap='Blues',linewidths=0.5, linecolor='black')
+
+        ax.set_xlabel('\nPredicted Values')
+        ax.set_ylabel('Actual Values ')
+        ax.xaxis.set_ticklabels(['False','True'])
+        ax.yaxis.set_ticklabels(['False','True'])
+        ax.hlines([3, 6, 9], *ax.get_xlim())
+        plt.savefig(os.path.join(save_dir, "CFmatrix.png"), dpi=600)
+        plt.close()
+
+def save_images(X_batch, Y_batch, outputs, epoch, save_dir, mode):
 
     input_img = X_batch[0].detach().cpu().permute([1,2,0]).numpy()
     input_img = (input_img*254).astype(np.uint8)
@@ -209,20 +240,21 @@ def save_images(X_batch, Y_batch, outputs, epoch, save_dir):
     ax[4].set_axis_off()
     ax[4].set_title("segm pred")
     ax[4].imshow(segm) # segmentation prediction
-    fig.savefig(os.path.join(save_dir, "epoch_"+format(epoch, "02d")+".png"), dpi=600)
+    fig.savefig(os.path.join(save_dir, mode +"epoch_"+format(epoch, "02d")+".png"), dpi=600)
+    plt.close(fig)
     
     #FULL IMAGES
     pred_seg = Image.fromarray(segm)
     segm_save_dir = os.path.join(save_dir, "segmentations_preds", )
     os.makedirs(segm_save_dir, exist_ok=True)
-    segm_save_path = os.path.join(segm_save_dir, "epoch"+format(epoch, "02d")+".png")
+    segm_save_path = os.path.join(segm_save_dir, mode + "epoch"+format(epoch, "02d")+".png")
     pred_seg.save(segm_save_path)
 
     segm_gt_comp = np.dstack((segm, gt_img, np.zeros_like(segm)))
     segm_gt_comp = Image.fromarray(segm_gt_comp)
     segm_gt_save_dir = os.path.join(save_dir, "segm_gt_comparison", )
     os.makedirs(segm_gt_save_dir, exist_ok=True)
-    segm_gt_save_path = os.path.join(segm_gt_save_dir, "epoch"+format(epoch, "02d")+".png")
+    segm_gt_save_path = os.path.join(segm_gt_save_dir, mode + "epoch"+format(epoch, "02d")+".png")
     segm_gt_comp.save(segm_gt_save_path)
 
 def plotLoss(train_dict, val_dict):
@@ -240,7 +272,7 @@ def plotLoss(train_dict, val_dict):
     plt.legend()
     plt.xlabel("Global Training Step")
     plt.ylabel("Cross Entropy Loss")
-    #plt.ylim(0,0.2)
+    plt.ylim(0,0.3)
     fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
     plt.close(fig)
 
@@ -260,7 +292,7 @@ def val_step(X_batch, Y_batch, optimizer, model, loss_fn):
     loss = loss_fn(outputs, Y_batch)
     return outputs,loss
 
-def runit(model, train_dl, val_dl, loss_fn, optimizer, batch_size, epochs, cadence):
+def runit(model, train_dl, val_dl, loss_fn, optimizer, batch_size, epochs, cadence,mode):
     global global_step
     #training
     for epoch in range(1, epochs + 1):
@@ -271,7 +303,44 @@ def runit(model, train_dl, val_dl, loss_fn, optimizer, batch_size, epochs, caden
             X_batch = X_batch.to(device)
             Y_batch = Y_batch.to(device)
             outputs,train_loss = train_step(X_batch, Y_batch, optimizer, model, loss_fn)
-            tracked_train_loss[global_step] = train_loss    
+            tracked_train_loss[global_step] = train_loss 
+            global_step += batch_size   
+            
+        #validation
+        if epoch == 1 or epoch % validation_cadence == 0 or epoch == epochs: #this is where the validation happens
+            model.eval()
+            
+            with torch.no_grad():
+                for X_batch, Y_batch in val_dl:
+                    X_batch = X_batch.to(device)
+                    Y_batch = Y_batch.to(device)
+                    outputs,val_loss = val_step(X_batch, Y_batch, optimizer, model, loss_fn)
+                    tracked_val_loss[global_step] = val_loss
+                    if savefig:
+                        avg_batch_dice_score = mean_dice_coef_over_batch(Y_batch, outputs)
+                        print("Batch dice score", avg_batch_dice_score)
+                        save_images(X_batch, Y_batch, outputs, epoch, save_dir, mode)
+                        savefig=False
+        
+        temp_acc_train, temp_acc_val, temp_dice, valvalues = getAccuracy(model,train_dl,val_dl) #Gets the training and validation accuracy
+        tracked_train_acc.append(temp_acc_train)
+        tracked_val_acc.append(temp_acc_val)
+        tracked_dice.append(temp_dice)
+    plotCM(valvalues) 
+
+def transferit(model, train_dl, val_dl, loss_fn, optimizer, batch_size, epochs, cadence):
+    global global_step
+    #training
+    for epoch in range(1, epochs + 1):
+        print("\nEPOCH", epoch)
+        model.train()
+        savefig=True 
+        for X_batch, Y_batch in (train_dl):
+            X_batch = X_batch.to(device)
+            Y_batch = Y_batch.to(device)
+            outputs,train_loss = train_step(X_batch, Y_batch, optimizer, model, loss_fn)
+            tracked_train_loss[global_step] = train_loss 
+            global_step += batch_size   
             
         #validation
         if epoch == 1 or epoch % validation_cadence == 0 or epoch == epochs: #this is where the validation happens
@@ -293,7 +362,8 @@ def runit(model, train_dl, val_dl, loss_fn, optimizer, batch_size, epochs, caden
         tracked_train_acc.append(temp_acc_train)
         tracked_val_acc.append(temp_acc_val)
         tracked_dice.append(temp_dice)
-        global_step += batch_size
+    plotCM(valvalues)
+        
 
 def main():
     global global_step
@@ -309,11 +379,15 @@ def main():
     theunet.to(device)
 
     opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
-    #loss_fn = torch.nn.CrossEntropyLoss(weight=CR_ENTR_WEIGHTS)
-    loss_fn = DiceLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
+    #loss_fn = DiceLoss()
 
     
-    runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence)
+    #runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
+
+    train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
+    runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
+
     plotAccuracy(tracked_train_acc,tracked_val_acc,tracked_dice)
     plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
 
