@@ -6,7 +6,7 @@ validation_cadence: 2 #How many training sets are gone through per validation se
 loss_weights: [0.4,0.6] #For cross entropy loss weighting
 avg_per_im: 5 #Not used
 
-img_dir: testimages/alu_cropped #alu_test_im #This is an example of 10 images, the image directory for the complete dataset is on harddrive
-gt_dir: testimages/alu_cropped_masks #alu_masks 
+img_dir: testimages/train_images #alu_test_im #This is an example of 10 images, the image directory for the complete dataset is on harddrive
+gt_dir: testimages/train_masks #alu_masks 
 save_dir: results
 validation_fraction: 0.2

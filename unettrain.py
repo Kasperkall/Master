@@ -237,9 +237,10 @@ class TrainingLoop:
         #input_img = (input_img*254).astype(np.uint8)
         input_img = input_img - input_img.min()
         input_img = input_img/input_img.max()
-        print(np.size(input_img))
+        print(input_img.shape)
         #input_img = np.un
-        input_img = input_img.numpy()
+        input_img = input_img.squeeze(2)
+        print(input_img.shape)
         input_img = np.moveaxis(input_img,0,2)
         gt_img = Y_batch[0].detach().cpu().numpy()
         gt_img = (gt_img*254).astype(np.uint8)
