@@ -272,7 +272,7 @@ def plotLoss(train_dict, val_dict):
     plt.legend()
     plt.xlabel("Global Training Step")
     plt.ylabel("Cross Entropy Loss")
-    plt.ylim(0,0.3)
+    plt.ylim(0,0.2)
     fig.savefig(os.path.join(save_dir, "loss.png"), dpi=600)
     plt.close(fig)
 
@@ -384,7 +384,7 @@ def main():
     #loss_fn = DiceLoss()
 
     
-    #runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
+    runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
 
     train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset

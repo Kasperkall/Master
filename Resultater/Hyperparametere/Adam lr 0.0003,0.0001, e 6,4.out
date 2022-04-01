@@ -1,0 +1,42 @@
+Training on  cuda:0
+
+EPOCH 1
+Batch dice score 8.939375335566469e-08
+Accuracy train: 0.9956259725
+Accuracy val: 0.99566974
+dice: 0.0    recall/sensitivity/TPR: 0.0   precision/PPV: 0   specificity/TNR: 1.0   f1: 0
+
+EPOCH 2
+Batch dice score 8.325000525878188e-08
+Accuracy train: 0.9956259725
+Accuracy val: 0.99566974
+dice: 0.0    recall/sensitivity/TPR: 0.0   precision/PPV: 0   specificity/TNR: 1.0   f1: 0
+
+EPOCH 3
+Accuracy train: 0.9956259725
+Accuracy val: 0.99566974
+dice: 0.0    recall/sensitivity/TPR: 0.0   precision/PPV: 0   specificity/TNR: 1.0   f1: 0
+
+EPOCH 4
+Batch dice score 1.0715984565660374e-07
+Accuracy train: 0.9956259725
+Accuracy val: 0.99566974
+dice: 0.0    recall/sensitivity/TPR: 0.0   precision/PPV: 0   specificity/TNR: 1.0   f1: 0
+
+EPOCH 1
+Batch dice score 0.6946832714247189
+Accuracy train: 0.994391
+Accuracy val: 0.9945353846153846
+dice: 0.7225289032392459    recall/sensitivity/TPR: 0.7548011533648876   precision/PPV: 0.6929031613644309   specificity/TNR: 0.9968166600142161   f1: 0.7225289032392459
+
+EPOCH 2
+Batch dice score 0.7580452757643911
+Accuracy train: 0.995125675
+Accuracy val: 0.9950572307692308
+dice: 0.7463124980259626    recall/sensitivity/TPR: 0.771307328219357   precision/PPV: 0.7228867745586931   specificity/TNR: 0.9971864016661671   f1: 0.7463124980259627
+
+EPOCH 3
+Batch dice score 0.7567313985597574
+Accuracy train: 0.993901025
+Accuracy val: 0.9936162051282051
+dice: 0.7217786995896547    recall/sensitivity/TPR: 0.8784723355638975   precision/PPV: 0.6125226653718638   specificity/TNR: 0.9947118971184276   f1: 0.7217786995896547

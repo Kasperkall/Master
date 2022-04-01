@@ -2,8 +2,8 @@ batch_size: 4
 batch_size_transfer: 2
 learning_rate: 0.0003
 learning_rate_transfer: 0.0001
-epochs: 6
-epochs_transfer: 4
+epochs: 4
+epochs_transfer: 3
 validation_cadence: 2 #How many training sets are gone through per validation set
 loss_weights: [0.3,0.7] #For cross entropy loss weighting
 
