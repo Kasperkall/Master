@@ -379,7 +379,8 @@ def main():
     theunet.to(device)
 
     # Specifying optimizer
-    opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
+    # opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
+    opt = torch.optim.SGD(theunet.parameters(), lr=learning_rate_first)
     loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
     #loss_fn = DiceLoss()
 
