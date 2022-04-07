@@ -38,11 +38,12 @@ import yaml
 from models import simplecnn
 from models import unet
 torch.manual_seed(123)
+from datetime import datetime
 
 from PIL import Image
 
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/configAll.yaml")
+config_file = open("configs/configshorttransfer.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
 img_dir_first = cfg['img_dir_first']
@@ -58,9 +59,12 @@ batch_size_transfer = cfg['batch_size_transfer']
 validation_cadence = cfg['validation_cadence']
 validation_frac = cfg['validation_fraction']
 loss_weights = torch.tensor(cfg['loss_weights'])
-save_dir = cfg['save_dir']
 learning_rate_first = cfg['learning_rate']
 learning_rate_transfer = cfg['learning_rate_transfer']
+
+now = datetime.now() # current date and time
+save_dir = cfg['save_dir'] + now.strftime("%H-%M")
+os.makedirs(save_dir, exist_ok=True)
 
 save_name =""
 tracked_train_acc = []
@@ -224,6 +228,30 @@ def save_images(X_batch, Y_batch, outputs, epoch, save_dir, mode):
 
 
     #MATPLOTLIB PLOTS
+    image = X_batch[0].detach().cpu()
+    image = image - image.min()
+    image = image/image.max()
+    image = image.numpy()
+    image = np.moveaxis(image,0,2)
+
+    _, predicted = torch.max(outputs, dim=1)
+
+    fig,ax = plt.subplots(1,3)
+    ax[0].set_axis_off()
+    ax[0].set_title("input image")
+    #ax[0].imshow(X_batch[0].detach().cpu().permute([1,2,0]))
+    ax[0].imshow(image)
+    ax[1].set_axis_off()
+    ax[1].set_title("ground truth")
+    ax[1].imshow(Y_batch[0].detach().cpu(), cmap='gray')
+    ax[2].set_axis_off()
+    ax[2].set_title("model pred") 
+    ax[2].imshow(predicted[0].detach().cpu(), cmap='gray') # class 1: laser pred
+    os.makedirs(save_dir, exist_ok=True)
+    fig.savefig(os.path.join(save_dir, "img_compare_"+ mode+format(epoch, "02d")+"First.png"), dpi=600)
+    plt.close(fig)
+
+    """
     fig,ax = plt.subplots(1,5)
     ax[0].set_axis_off()
     ax[0].set_title("input image")
@@ -242,6 +270,7 @@ def save_images(X_batch, Y_batch, outputs, epoch, save_dir, mode):
     ax[4].imshow(segm) # segmentation prediction
     fig.savefig(os.path.join(save_dir, mode +"epoch_"+format(epoch, "02d")+".png"), dpi=600)
     plt.close(fig)
+    """
     
     #FULL IMAGES
     pred_seg = Image.fromarray(segm)
@@ -385,8 +414,8 @@ def main():
     
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
 
-    train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
-    runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
+   # train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
+   # runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
 
     plotAccuracy(tracked_train_acc,tracked_val_acc,tracked_dice)
     plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
