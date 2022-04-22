@@ -1,7 +1,7 @@
 batch_size: 4
 batch_size_transfer: 2
-learning_rate: 0.001
-learning_rate_transfer: 0.001
+learning_rate: 0.0003
+learning_rate_transfer: 0.0001
 epochs: 4
 epochs_transfer: 6
 validation_cadence: 2 #How many training sets are gone through per validation set
@@ -9,8 +9,8 @@ loss_weights: [0.3,0.7] #For cross entropy loss weighting
 
 img_dir_first: scan-v4/train
 gt_dir_first: scan-v4/ground-truth
-img_dir_transfer: images500x500/combine 
-gt_dir_transfer: images500x500/gtCombine 
+img_dir_transfer: images500x500/aluminium
+gt_dir_transfer: images500x500/gtAluminium
 #img_dir_first: images500x500/combine 
 #gt_dir_first: images500x500/gtCombine
 #img_dir_transfer: images500x500/combine 
