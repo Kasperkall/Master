@@ -407,10 +407,10 @@ def main():
     theunet = unet.UNET()
     theunet.to(device)
 
-    opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
+    # opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
     opt = torch.optim.Adagrad(theunet.parameters(), lr=learning_rate_first)
-    loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
-    #loss_fn = DiceLoss()
+    # loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
+    loss_fn = DiceLoss()
 
     
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
