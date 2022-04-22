@@ -43,7 +43,7 @@ from datetime import datetime
 from PIL import Image
 
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/configshorttransfer.yaml")
+config_file = open("configs/configAll.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
 img_dir_first = cfg['img_dir_first']
@@ -408,6 +408,7 @@ def main():
     theunet.to(device)
 
     opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first)
+    # opt = torch.optim.Adagrad(theunet.parameters(), lr=learning_rate_first)
     loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
     #loss_fn = DiceLoss()
 
