@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J trainNetwork             # Sensible name for the job
+#SBATCH -J trainNetworkrunimprove            # Sensible name for the job
 #SBATCH -N 1                   # Allocate 2 nodes for the job
 #SBATCH --ntasks-per-node=1     # 1 task per node
 #SBATCH --gres=gpu:1

@@ -43,7 +43,7 @@ from datetime import datetime
 from PIL import Image
 
 #Here we import the yaml file and set some of the variables
-config_file = open("configs/configshorttransfer.yaml")
+config_file = open("configs/configAll.yaml")
 cfg = yaml.load(config_file, Loader=yaml.FullLoader)
 
 img_dir_first = cfg['img_dir_first']
@@ -414,8 +414,8 @@ def main():
     
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
 
-   # train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
-   # runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
+    train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
+    runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
 
     plotAccuracy(tracked_train_acc,tracked_val_acc,tracked_dice)
     plotLoss(tracked_train_loss,tracked_val_loss) #Plots the loss for the entire training loop
