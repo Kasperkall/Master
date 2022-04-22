@@ -1,4 +1,4 @@
-batch_size: 2
+batch_size: 4
 batch_size_transfer: 4
 learning_rate: 0.0003
 learning_rate_transfer: 0.0001
