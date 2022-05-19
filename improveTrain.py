@@ -58,6 +58,7 @@ batch_size_transfer = cfg['batch_size_transfer']
 
 validation_cadence = cfg['validation_cadence']
 validation_frac = cfg['validation_fraction']
+validation_frac_transfer = cfg['validation_fraction_transfer']
 loss_weights = torch.tensor(cfg['loss_weights'])
 learning_rate_first = cfg['learning_rate']
 learning_rate_transfer = cfg['learning_rate_transfer']
@@ -408,7 +409,7 @@ def main():
     theunet.to(device)
 
     #opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_first) #optimizer for simulert dataset
-    opt =torch.optim.SGD(lr=learning_rate_first)
+    opt =torch.optim.Adam(theunet.parameters(),lr=learning_rate_first)
     loss_fn = torch.nn.CrossEntropyLoss(weight=loss_weights).to(device)
     #loss_fn = DiceLoss()
 
@@ -417,10 +418,10 @@ def main():
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_first, epochs_first,validation_cadence,"first_") #første dataset
 
     #OBS! Dette er optimizeren for det ekte datsetet, pass på at lr=learning_rate_transfer
-    #opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_transfer) 
-    opt =torch.optim.SGD(lr=learning_rate_transfer)
+    opt = torch.optim.Adam(theunet.parameters(), lr=learning_rate_transfer) 
+    #opt =torch.optim.Adam(theunet.parameters(),lr=learning_rate_transfer)
 
-    train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac)
+    train_dl,val_dl = dataloaderv3.get_dataloaders(img_dir_transfer, gt_dir_transfer, batch_size_transfer,validation_frac_transfer)
     runit(theunet, train_dl, val_dl, loss_fn, opt, batch_size_transfer, epochs_transfer,validation_cadence,"transfer_") #transfer learning til andre dataset
 
     plotAccuracy(tracked_train_acc,tracked_val_acc,tracked_dice)

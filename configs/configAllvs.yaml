@@ -1,5 +1,5 @@
 batch_size: 2
-batch_size_transfer: 4
+batch_size_transfer: 2
 learning_rate: 0.0003
 learning_rate_transfer: 0.0001
 epochs: 4
