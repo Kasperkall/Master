@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, DataLoader, sampler
 from PIL import Image
 import matplotlib.pyplot as plt
 
+#Dataloaderv3 is the main dataloader used in the thesis
 
 
 class SegmentationDataset(Dataset):

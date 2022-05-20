@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader, sampler
 from PIL import Image
 import matplotlib.pyplot as plt
 
-
+#Dataloaderv4 is very similar to dataloaderv3, however it does NOT include a validation_fraction, meaning it takes everything into a single dataset
 
 class SegmentationDataset(Dataset):
     """
