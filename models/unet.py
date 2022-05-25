@@ -1,5 +1,5 @@
 # This U-Net model is based on the model made by Aladdin Persson in his tutorail about Umage Segmentation with U-Net
-# Tutoral: https://www.youtube.com/watch?v=IHq1t7NxS8k
+# Tutorial: https://www.youtube.com/watch?v=IHq1t7NxS8k
 # U-Net mode: https://github.com/aladdinpersson/Machine-Learning-Collection/blob/master/ML/Pytorch/image_segmentation/semantic_segmentation_unet/model.py
 
 import torch
